@@ -1,0 +1,8 @@
+.env
+.venv
+*.text
+*.csv
+*.log
+*.csv
+*.vscode
+*.pdf
