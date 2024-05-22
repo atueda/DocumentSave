@@ -1,9 +1,11 @@
 .env
 .venv
 *.text
+*.txt
 *.csv
 *.log
 *.csv
 *.vscode
 *.pdf
 *.pyc
+.DS_Store
