@@ -11,7 +11,6 @@ LOG = logging.getLogger(__name__)
 def create_pdf(content, file_path):
   try:
         # 日本語フォントを読み込む
-        #pdfmetrics.registerFont(TTFont('IPAGothic', 'ipag.ttf'))
         pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5')) #フォント
         
         c = canvas.Canvas(file_path, pagesize=A4)
