@@ -1,12 +1,12 @@
 display_information:
-  name: document-management
+  name: message transfer
 features:
   app_home:
     home_tab_enabled: true
     messages_tab_enabled: true
     messages_tab_read_only_enabled: false
   bot_user:
-    display_name: Document Management
+    display_name: Message Transfer
     always_online: true
   shortcuts:
     - name: メッセージを保存
@@ -25,6 +25,7 @@ oauth_config:
       - im:history
       - mpim:history
       - users:read
+      - reactions:write
 settings:
   event_subscriptions:
     bot_events:

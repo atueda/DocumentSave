@@ -29,10 +29,14 @@ def message_shortcut(ack, shortcut, client, body):
     try:
         LOG.debug("shortcut")
         ack()
+        user_id = shortcut["user"]["id"]
+        user_info = client.users_info(user=user_id)
+        user_name = user_info["user"]["real_name"]
         channel_id = shortcut["channel"]["id"]
         message_ts = shortcut["message"]["ts"]
         thread_ts = shortcut["message"].get("thread_ts")
-        #転送先と同じチャンネルの場合は処理終了
+        print(f'channel_id: {channel_id}')
+        print(f'channel: {channel}')
         if channel_id == channel:
             print('終了')
             return
@@ -45,11 +49,12 @@ def message_shortcut(ack, shortcut, client, body):
         message_time = message_response["messages"][0]["ts"]
         date = format_timestamp(message_time)
         message_link = f"https://slack.com/archives/{channel_id}/p{message_time.replace('.', '')}"
-        user_info = client.users_info(user=message_user_id)
-        message_user_name = user_info["user"]["real_name"]
+        message_user_info = client.users_info(user=message_user_id)
+        message_user_name = message_user_info["user"]["real_name"]
         message_files = get_files_from_messages(message_response["messages"])
         
-        content = (f"投稿者: {message_user_name} (<@{message_user_id}>)\n"
+        content = f"このメッセージ保存を実行したユーザー: {user_name} (<@{user_id}>)"
+        content += (f"\n\n投稿者: {message_user_name} (<@{message_user_id}>)\n"
                    f"日時: {date}\n"
                    f"リンク: {message_link}\n"
                    f"メッセージ:\n{message_response['messages'][0]['text']}\n\n")
@@ -100,6 +105,13 @@ def message_shortcut(ack, shortcut, client, body):
                 thread_ts=new_thread_ts
             )
             LOG.debug(f"File upload response: {response}")
+        
+        # 元のスレッドにリアクションを追加
+        client.reactions_add(
+            channel=channel_id,
+            name="white_check_mark",
+            timestamp=message_ts
+        )
     except Exception as e:
         LOG.error(f"Error publishing home tab: {e}")
 

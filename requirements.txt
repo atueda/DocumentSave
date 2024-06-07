@@ -1,4 +1,3 @@
-leveldb
 slacktokens
 pyproject-toml
 python-dotenv
