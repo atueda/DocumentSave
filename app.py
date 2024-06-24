@@ -8,57 +8,76 @@ import requests
 import pdf
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
+# 環境変数をロード
 load_dotenv()
+
+# ロガーのセットアップ
 LOG = logger(__name__)
+
+# Slackクライアントのセットアップ
 client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 channel = os.environ.get("CHANNEL")
 
+# タイムスタンプをフォーマットする関数
 def format_timestamp(ts):
     dt = datetime.fromtimestamp(float(ts))
     return dt.strftime('%Y/%m/%d %H:%M:%S')
 
+# メッセージからファイルを取得する関数
 def get_files_from_messages(messages):
     files = []
     for message in messages:
         files.extend(message.get("files", []))
     return files
 
+# ショートカットがトリガーされたときの処理
 @app.shortcut("message_save")
 def message_shortcut(ack, shortcut, client, body):
     try:
         LOG.debug("shortcut")
         ack()
+
+        # ユーザー情報を取得
         user_id = shortcut["user"]["id"]
         user_info = client.users_info(user=user_id)
         user_name = user_info["user"]["real_name"]
+
+        # チャンネルIDとメッセージタイムスタンプを取得
         channel_id = shortcut["channel"]["id"]
         message_ts = shortcut["message"]["ts"]
         thread_ts = shortcut["message"].get("thread_ts")
-        print(f'channel_id: {channel_id}')
-        print(f'channel: {channel}')
+
+        # チャンネルが指定されたチャンネルであれば処理を終了
         if channel_id == channel:
             print('終了')
             return
+
+        # メッセージの詳細を取得
         message_response = client.conversations_history(
             channel=channel_id,
             latest=message_ts,
-            inclusive=True
+            inclusive=True,
+            limit=1  # 取得するメッセージを1つに制限
         )
-        message_user_id = message_response["messages"][0]["user"]
-        message_time = message_response["messages"][0]["ts"]
+        
+        message = message_response["messages"][0]
+        message_user_id = message["user"]
+        message_time = message["ts"]
         date = format_timestamp(message_time)
         message_link = f"https://slack.com/archives/{channel_id}/p{message_time.replace('.', '')}"
         message_user_info = client.users_info(user=message_user_id)
         message_user_name = message_user_info["user"]["real_name"]
-        message_files = get_files_from_messages(message_response["messages"])
-        
+        message_files = get_files_from_messages([message])
+
+        # コンテンツの生成
         content = f"このメッセージ保存を実行したユーザー: {user_name} (<@{user_id}>)"
         content += (f"\n\n投稿者: {message_user_name} (<@{message_user_id}>)\n"
                    f"日時: {date}\n"
                    f"リンク: {message_link}\n"
-                   f"メッセージ:\n{message_response['messages'][0]['text']}\n\n")
-        
+                   f"メッセージ:\n{message['text']}\n\n")
+
+        # スレッドが存在する場合、スレッドの詳細を追加
         if thread_ts:
             thread_response = client.conversations_replies(
                 channel=channel_id,
@@ -74,7 +93,7 @@ def message_shortcut(ack, shortcut, client, body):
         pdf_file_path = "message.pdf"
         pdf.create_pdf(content, pdf_file_path)
         LOG.debug("File Create")
-        
+
         # 新しいメッセージを別のチャンネルに投稿し、そのスレッドにPDFを添付
         new_message = client.chat_postMessage(
             channel=channel,
@@ -88,7 +107,7 @@ def message_shortcut(ack, shortcut, client, body):
             initial_comment="Here is the PDF containing the message and its thread.",
             thread_ts=new_thread_ts
         )
-        
+
         # 元のメッセージとスレッド内のファイルを新しいメッセージのスレッドに添付
         all_files = message_files + (thread_files if thread_ts else [])
         for file in all_files:
@@ -105,16 +124,24 @@ def message_shortcut(ack, shortcut, client, body):
                 thread_ts=new_thread_ts
             )
             LOG.debug(f"File upload response: {response}")
-        
+
         # 元のスレッドにリアクションを追加
         client.reactions_add(
             channel=channel_id,
             name="white_check_mark",
             timestamp=message_ts
         )
+        #元のスレッドからリアクションを削除
+        # client.reactions_remove(
+        #     channel=channel_id,
+        #     name="white_check_mark",
+        #     timestamp=message_ts
+        # )
     except Exception as e:
         LOG.error(f"Error publishing home tab: {e}")
+        # Rate Limitの場合、処理失敗のエラーハンドリング
 
+# メイン処理
 if __name__ == "__main__":
     handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
     LOG.debug("server start")
