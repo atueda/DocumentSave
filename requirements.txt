@@ -1,6 +1,4 @@
 slacktokens
-pyproject-toml
 python-dotenv
 slack_sdk
-pandas
 reportlab
