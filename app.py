@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import datetime
 from logger import logger
 from slack_bolt import App
@@ -11,12 +12,26 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 # 環境変数をロード
 load_dotenv()
 
+# 動作確認用にデバッグレベルのロギングを有効にします
+# 本番運用では削除しても構いません
+logging.basicConfig(level=logging.DEBUG)
+
 # ロガーのセットアップ
 LOG = logger(__name__)
 
 # Slackクライアントのセットアップ
 client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
-app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+#app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+app = App(
+    # リクエストの検証に必要な値
+    # Settings > Basic Information > App Credentials > Signing Secret で取得可能な値
+    signing_secret=os.environ["SLACK_SIGNING_SECRET"],
+    # 上でインストールしたときに発行されたアクセストークン
+    # Settings > Install App で取得可能な値
+    token=os.environ["SLACK_BOT_TOKEN"],
+    # AWS Lamdba では、必ずこの設定を true にしておく必要があります
+    process_before_response=True,
+)
 channel = os.environ.get("CHANNEL")
 
 # タイムスタンプをフォーマットする関数
@@ -143,6 +158,7 @@ def message_shortcut(ack, shortcut, client, body):
 
 # メイン処理
 if __name__ == "__main__":
-    handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
+    app.start(3000)
+    #handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
     LOG.debug("server start")
-    handler.start()
+    #handler.start()
