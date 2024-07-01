@@ -1,6 +1,2 @@
-slacktokens
-pyproject-toml
-python-dotenv
-slack_sdk
-pandas
-reportlab
+slack-bolt>=1.15.5,<2
+requests

@@ -9,3 +9,10 @@
 *.pdf
 *.pyc
 .DS_Store
+.requirements/*
+*.zip
+.serverless/*
+node_modules/*
+node_modules/.package-lock.json
+package-lock.json
+old/*
