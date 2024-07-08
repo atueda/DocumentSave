@@ -159,6 +159,6 @@ def message_shortcut(ack, shortcut, client, body):
 # メイン処理
 if __name__ == "__main__":
     app.start(3000)
-    #handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
-    LOG.debug("server start")
-    #handler.start()
+    # handler = SocketModeHandler(app, os.environ.get("SLACK_APP_TOKEN"))
+    # LOG.debug("server start")
+    # handler.start()
